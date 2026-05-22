@@ -1,6 +1,9 @@
 # MCP Tool Auditor
 
-Scan MCP server tool definitions for poisoning, injection, and OWASP MCP Top 10 vulnerabilities.
+**Scan MCP server tool definitions for poisoning, injection, and OWASP MCP Top 10 vulnerabilities.**
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
+[![OWASP MCP Top 10](https://img.shields.io/badge/OWASP-MCP03%20Tool%20Poisoning-red)](https://owasp.org/www-project-mcp-top-10/)
 
 `mcp-tool-auditor` is a comprehensive security scanner for Model Context Protocol (MCP) servers. It detects tool poisoning, full-schema poisoning (FSP), rug-pull attacks, tool shadowing, and ATPA (Advanced Tool Poisoning Attacks), while mapping findings to the OWASP MCP Top 10 framework.
 
