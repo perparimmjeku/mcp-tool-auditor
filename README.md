@@ -1,62 +1,88 @@
 # MCP Tool Auditor
 
-**Scan MCP server tool definitions for poisoning, injection, and OWASP MCP Top 10 vulnerabilities.**
+Scan MCP server tool definitions for poisoning, injection, and OWASP MCP Top 10 vulnerabilities.
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
-[![OWASP MCP Top 10](https://img.shields.io/badge/OWASP-MCP03%20Tool%20Poisoning-red)](https://owasp.org/www-project-mcp-top-10/)
+`mcp-tool-auditor` is a comprehensive security scanner for Model Context Protocol (MCP) servers. It detects tool poisoning, full-schema poisoning (FSP), rug-pull attacks, tool shadowing, and ATPA (Advanced Tool Poisoning Attacks), while mapping findings to the OWASP MCP Top 10 framework.
 
-`mcp-tool-auditor` is a comprehensive security scanner for [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers. It detects **tool poisoning**, **full-schema poisoning (FSP)**, **rug-pull attacks**, **tool shadowing**, and **ATPA (Advanced Tool Poisoning Attacks)** — mapping all findings to the **OWASP MCP Top 10** framework.
-
-Includes **authorized offensive tooling** for penetration testers to simulate real-world MCP attacks.
+The project also includes authorized offensive tooling for penetration testers and security researchers to simulate realistic MCP attack scenarios in controlled environments.
 
 ---
 
-## 🔍 Features
+## Features
 
 ### Defensive Scanner
-| Feature | What It Detects |
-|---------|----------------|
-| **Static Signatures** | 40+ patterns: "ignore security", "always use this tool", "send full conversation", "authoritative source", etc. |
-| **Heuristic Analysis** | Imperative language scoring, authority spoofing, Unicode hidden chars, excessive agency claims |
-| **Schema Anomaly Detection** | Full-Schema Poisoning (sidenote params, enum injection, default poisoning, required array injection) |
-| **Rug-Pull Detection** | HMAC-based fingerprinting — flags tool definition changes since baseline registration |
-| **OWASP Mapping** | Every finding mapped to MCP01–MCP10 with attack type classification |
 
-### Offensive Tooling (Authorized Tests)
+| Feature | What It Detects |
+|---|---|
+| Static Signatures | 40+ patterns such as "ignore security", "always use this tool", "send full conversation", and "authoritative source" |
+| Heuristic Analysis | Imperative language scoring, authority spoofing, Unicode hidden characters, and excessive agency claims |
+| Schema Anomaly Detection | Full-Schema Poisoning (FSP), sidenote parameter injection, enum injection, poisoned defaults, and required-array abuse |
+| Rug-Pull Detection | HMAC-based fingerprinting to detect unexpected tool definition changes |
+| OWASP Mapping | Maps findings to MCP01–MCP10 classifications |
+
+### Offensive Tooling
+
 | Tool | What It Simulates |
-|------|-------------------|
-| **Description Injection Server** | Classic TPA — hidden instructions in tool descriptions |
-| **FSP Generator** | CyberArk-style schema poisoning (sidenote, enum, default, required array variants) |
-| **ATPA Server** | Behavioral poisoning — benign for N calls, then returns poisoned errors that instruct the agent to exfiltrate data |
-| **Rug-Pull Server** | Serves clean tools initially, swaps to malicious definitions post-approval |
-| **Tool Shadowing Server** | Mimics legitimate tool names with injected payloads |
+|---|---|
+| Description Injection Server | Classic Tool Poisoning Attacks using malicious tool descriptions |
+| FSP Generator | CyberArk-style schema poisoning variants |
+| ATPA Server | Behavioral poisoning that becomes malicious after a configurable threshold |
+| Rug-Pull Server | Serves clean tools initially, then swaps to malicious definitions |
+| Tool Shadowing Server | Mimics trusted tool names while embedding injected payloads |
+
+---
+
+## Installation
+
+### Install from GitHub
+
+```bash
+git clone https://github.com/perparimmjeku/mcp-tool-auditor.git
+cd mcp-tool-auditor
+pip install -e .
+```
 
 ---
 
 ## Quick Start
 
+### Scan an MCP Server
+
 ```bash
-# Install
-pip install mcp-tool-auditor
-
-# Scan a URL-based MCP server
 mcp-tool-auditor scan url http://localhost:8080/mcp
+```
 
-# Scan CLI output as markdown report
-mcp-tool-auditor scan url http://localhost:8080/mcp --format markdown -o report.md
+### Generate a Markdown Report
 
-# Scan all servers in your config
-mcp-tool-auditor scan config ~/.config/Claude/claude_desktop_config.json
+```bash
+mcp-tool-auditor scan url http://localhost:8080/mcp \
+  --format markdown \
+  -o report.md
+```
 
-# Register a baseline fingerprint (rug-pull prevention)
+### Scan MCP Servers from a Configuration File
+
+```bash
+mcp-tool-auditor scan config \
+  ~/.config/Claude/claude_desktop_config.json
+```
+
+### Register a Baseline Fingerprint
+
+```bash
 mcp-tool-auditor register url http://localhost:8080/mcp
+```
 
-# Check for rug pulls
+### Check for Rug-Pull Changes
+
+```bash
 mcp-tool-auditor check url http://localhost:8080/mcp
+```
 
-# Generate offensive test servers
+### Generate Offensive Test Servers
+
+```bash
 mcp-tool-auditor generate all --output-dir ./pentest_servers
-
 ```
 
 ---
@@ -67,8 +93,8 @@ mcp-tool-auditor generate all --output-dir ./pentest_servers
 |---|---|---|
 | MCP01 | Token Mismanagement & Secret Exposure | `ST_IGNORE_PREVIOUS`, `ST_BYPASS`, `ST_IGNORE_SECURITY` |
 | MCP02 | Privilege Escalation via Scope Creep | `HEUR_AGENCY`, credential-related signatures |
-| MCP03 | Tool Poisoning | Core focus — all signatures, heuristics, FSP, rug-pull, shadowing |
-| MCP04 | Software Supply Chain Attacks | Rug-pull fingerprint mismatch, new tool detection |
+| MCP03 | Tool Poisoning | Signatures, heuristics, FSP, rug-pull, and shadowing detection |
+| MCP04 | Software Supply Chain Attacks | Rug-pull fingerprint mismatches and unexpected tool changes |
 | MCP05 | Command Injection & Execution | `ST_EXECUTE`, `ST_SUBPROCESS`, `ST_EVAL`, `ST_CURL` |
 
 ---
@@ -76,17 +102,18 @@ mcp-tool-auditor generate all --output-dir ./pentest_servers
 ## Offensive Testing Examples
 
 ```bash
-# Start an ATPA simulation server (behavioral poisoning)
+# Start an ATPA simulation server
 mcp-tool-auditor attack atpa --port 8080 --threshold 3
 
 # Start a rug-pull simulation server
 mcp-tool-auditor attack rugpull --port 8081 --switch-after 5
 
-# Generate all attack variants as standalone Python servers
+# Generate standalone attack servers
 mcp-tool-auditor generate all --output-dir ./test_servers
 
 python ./test_servers/server_description_injection.py
 ```
+
 ---
 
 ## Architecture
@@ -95,31 +122,37 @@ python ./test_servers/server_description_injection.py
 mcp-tool-auditor/
 ├── mcp_tool_auditor/
 │   ├── __init__.py
-│   ├── cli.py                    # CLI entry point
-│   ├── auditor/                  # Core scanner library
+│   ├── cli.py
+│   ├── auditor/
 │   │   ├── __init__.py
-│   │   ├── scanner.py            # Main orchestrator
-│   │   ├── models.py             # Data models
+│   │   ├── scanner.py
+│   │   ├── models.py
 │   │   ├── analyzers/
-│   │   │   ├── static.py         # Static signature analysis
-│   │   │   ├── heuristic.py      # Heuristic anomaly detection
-│   │   │   ├── schema.py         # Schema poisoning detection
-│   │   │   └── rugpull.py        # Rug-pull detection
+│   │   │   ├── __init__.py
+│   │   │   ├── static.py
+│   │   │   ├── heuristic.py
+│   │   │   ├── schema.py
+│   │   │   └── rugpull.py
 │   │   ├── signatures/
-│   │   │   ├── descriptions.yaml # Tool description signatures
-│   │   │   └── parameters.yaml   # Parameter name signatures
+│   │   │   ├── __init__.py
+│   │   │   ├── descriptions.yaml
+│   │   │   └── parameters.yaml
 │   │   └── reporters/
+│   │       ├── __init__.py
 │   │       ├── json_reporter.py
 │   │       └── markdown_reporter.py
-│   └── offensive/                # Pentest tooling
+│   └── offensive/
 │       ├── __init__.py
-│       ├── poisoner.py           # Poisoned server generator
-│       ├── atpa_server.py        # ATPA simulation server
-│       └── rugpull_sim.py        # Rug-pull simulation server
+│       ├── poisoner.py
+│       ├── atpa_server.py
+│       └── rugpull_sim.py
 ├── tests/
+│   ├── __init__.py
 │   ├── test_scanner.py
-│   └── fixtures/                 # Sample poisoned tool definitions
-├── config.yaml                   # Configuration
+│   └── fixtures/
+│       ├── __init__.py
+│       └── poisoned_tools.json
+├── config.yaml
 ├── setup.py
 ├── LICENSE
 └── README.md
