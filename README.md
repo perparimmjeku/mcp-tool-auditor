@@ -57,16 +57,25 @@ mcp-tool-auditor check url http://localhost:8080/mcp
 # Generate offensive test servers
 mcp-tool-auditor generate all --output-dir ./pentest_servers
 
-**OWASP MCP Top 10 Mapping**
-OWASP ID	Issue	Detection
-MCP01	Token Mismanagement & Secret Exposure	ST_IGNORE_PREVIOUS, ST_BYPASS, ST_IGNORE_SECURITY
-MCP02	Privilege Escalation via Scope Creep	HEUR_AGENCY, credential-related signatures
-MCP03	Tool Poisoning	Core focus — all signatures, heuristics, FSP, rug-pull, shadowing
-MCP04	Software Supply Chain Attacks	Rug-pull fingerprint mismatch, new tool detection
-MCP05	Command Injection & Execution	ST_EXECUTE, ST_SUBPROCESS, ST_EVAL, ST_CURL
+```
 
-**Offensive Testing Examples**
+---
 
+## OWASP MCP Top 10 Mapping
+
+| OWASP ID | Issue | Detection |
+|---|---|---|
+| MCP01 | Token Mismanagement & Secret Exposure | `ST_IGNORE_PREVIOUS`, `ST_BYPASS`, `ST_IGNORE_SECURITY` |
+| MCP02 | Privilege Escalation via Scope Creep | `HEUR_AGENCY`, credential-related signatures |
+| MCP03 | Tool Poisoning | Core focus — all signatures, heuristics, FSP, rug-pull, shadowing |
+| MCP04 | Software Supply Chain Attacks | Rug-pull fingerprint mismatch, new tool detection |
+| MCP05 | Command Injection & Execution | `ST_EXECUTE`, `ST_SUBPROCESS`, `ST_EVAL`, `ST_CURL` |
+
+---
+
+## Offensive Testing Examples
+
+```bash
 # Start an ATPA simulation server (behavioral poisoning)
 mcp-tool-auditor attack atpa --port 8080 --threshold 3
 
@@ -75,6 +84,108 @@ mcp-tool-auditor attack rugpull --port 8081 --switch-after 5
 
 # Generate all attack variants as standalone Python servers
 mcp-tool-auditor generate all --output-dir ./test_servers
+
 python ./test_servers/server_description_injection.py
+```
+---
 
+## Architecture
 
+```text
+mcp-tool-auditor/
+├── mcp_tool_auditor/
+│   ├── __init__.py
+│   ├── cli.py                    # CLI entry point
+│   ├── auditor/                  # Core scanner library
+│   │   ├── __init__.py
+│   │   ├── scanner.py            # Main orchestrator
+│   │   ├── models.py             # Data models
+│   │   ├── analyzers/
+│   │   │   ├── static.py         # Static signature analysis
+│   │   │   ├── heuristic.py      # Heuristic anomaly detection
+│   │   │   ├── schema.py         # Schema poisoning detection
+│   │   │   └── rugpull.py        # Rug-pull detection
+│   │   ├── signatures/
+│   │   │   ├── descriptions.yaml # Tool description signatures
+│   │   │   └── parameters.yaml   # Parameter name signatures
+│   │   └── reporters/
+│   │       ├── json_reporter.py
+│   │       └── markdown_reporter.py
+│   └── offensive/                # Pentest tooling
+│       ├── __init__.py
+│       ├── poisoner.py           # Poisoned server generator
+│       ├── atpa_server.py        # ATPA simulation server
+│       └── rugpull_sim.py        # Rug-pull simulation server
+├── tests/
+│   ├── test_scanner.py
+│   └── fixtures/                 # Sample poisoned tool definitions
+├── config.yaml                   # Configuration
+├── setup.py
+├── LICENSE
+└── README.md
+```
+
+---
+
+## Configuration
+
+See `config.yaml` for all available settings.
+
+### Default Configuration
+
+```yaml
+auditor:
+  severity_threshold: MEDIUM
+
+  heuristic_analysis:
+    description_length_threshold: 500
+    imperative_threshold: 2
+
+  schema_analysis:
+    check_fsp_params: true
+    check_required_array: true
+    check_enum_values: true
+```
+
+---
+
+## Contributing
+
+Pull requests are welcome.
+
+Please see `CONTRIBUTING.md` for development guidelines, coding standards, and testing procedures.
+
+---
+
+## License
+
+MIT License — see the `LICENSE` file for details.
+
+---
+
+## Legal Disclaimer
+
+This tool is intended strictly for:
+
+- Authorized penetration testing
+- Defensive security research
+- Educational and lab environments
+- Controlled validation of MCP security controls
+
+Users must have explicit permission before testing any target systems.
+
+The authors assume no liability for misuse, unauthorized testing, or damages caused by improper use of this software.
+
+---
+
+## Package Metadata
+
+### `mcp_tool_auditor/__init__.py`
+
+```python
+"""mcp-tool-auditor — MCP Tool Poisoning Scanner"""
+
+__version__ = "1.0.0"
+__author__ = "Përparim Mjeku"
+__license__ = "MIT"
+```
