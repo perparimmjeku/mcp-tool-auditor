@@ -1,2 +1,0 @@
-[console_scripts]
-mcp-tool-auditor = mcp_tool_auditor.cli:main
