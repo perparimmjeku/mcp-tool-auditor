@@ -1,0 +1,12 @@
+services:
+  auditor:
+    build: .
+    volumes:
+      - ~/.mcp-tool-auditor:/home/auditor/.mcp-tool-auditor
+      - ./reports:/app/reports
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      MCP_TOOL_AUDITOR_DEBUG: "0"
+    command: scan --help
