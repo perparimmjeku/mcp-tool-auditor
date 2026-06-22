@@ -29,6 +29,12 @@ _PREFIX_REMEDIATION: list[tuple[str, str]] = [
         "hide poisoned error messages used by ATPA attacks.",
     ),
     (
+        "SRC_SHELL_INJECTION",
+        "An LLM-controlled tool argument flows into a shell-spawning call. Never pass tool "
+        "input to a shell: drop shell=True / shell:true, pass an argument array (e.g. "
+        "subprocess.run([...]) or execFile), and validate/allowlist the input.",
+    ),
+    (
         "RUGPULL",
         "Tool definitions changed since the registered baseline. Re-review the server, then "
         "re-register the baseline only after confirming the change is legitimate "

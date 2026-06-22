@@ -132,6 +132,20 @@ mcp-tool-auditor explain BEHAV_ATPA_TRANSITION
 mcp-tool-auditor explain --list
 ```
 
+### Source-Scan (Prompt-In-Shell-Out)
+
+Goes one level deeper than definitions/behavior: reads an MCP server's **source code**
+(Python via AST, JS/TS via heuristics) and flags shell-injection sinks fed by
+LLM-controlled tool arguments — `subprocess(shell=True)`, `os.system`, `child_process.exec`, etc.
+
+```bash
+mcp-tool-auditor source-scan ./my-mcp-server                 # human-readable
+mcp-tool-auditor source-scan ./my-mcp-server --format sarif  # code-scanning
+mcp-tool-auditor source-scan ./my-mcp-server --fail-on CRITICAL  # CI gate
+```
+
+It only opens files that import an MCP SDK, so it won't flag shell calls in unrelated code.
+
 ### Generate Offensive Test Servers
 
 ```bash

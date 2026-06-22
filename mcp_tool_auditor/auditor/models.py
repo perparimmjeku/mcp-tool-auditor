@@ -33,6 +33,8 @@ class Finding:
     attack_type: str = "unknown"
     field: str | None = None
     tool_name: str | None = None
+    file: str | None = None
+    line: int | None = None
 
     def __post_init__(self) -> None:
         """Normalize and validate finding fields."""
@@ -56,6 +58,8 @@ class Finding:
             "attack_type": self.attack_type,
             "field": self.field,
             "tool_name": self.tool_name,
+            "file": self.file,
+            "line": self.line,
         }
 
 

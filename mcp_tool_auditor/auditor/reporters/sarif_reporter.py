@@ -73,6 +73,11 @@ class SarifReporter:
                         }
                     ]
                 }
+                if finding.file:
+                    location["physicalLocation"] = {
+                        "artifactLocation": {"uri": finding.file},
+                        "region": {"startLine": finding.line or 1},
+                    }
                 sarif_results.append(
                     {
                         "ruleId": finding.rule,

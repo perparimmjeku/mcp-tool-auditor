@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from ... import __version__
 from ..models import ScanResult, Severity
 
 
@@ -32,7 +33,7 @@ class MarkdownReporter:
         lines.append("# MCP Tool Auditor Report")
         lines.append("")
         lines.append(f"**Generated:** {datetime.now(timezone.utc).isoformat()}")
-        lines.append("**Tool:** mcp-tool-auditor v1.0.0")
+        lines.append(f"**Tool:** mcp-tool-auditor v{__version__}")
         lines.append("**OWASP Reference:** OWASP MCP Top 10 (2025)")
         lines.append("")
 

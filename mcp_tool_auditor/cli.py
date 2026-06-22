@@ -305,6 +305,13 @@ Examples:
     for sub in (beh_stdio, beh_url):
         sub.add_argument("--yes", action="store_true", help="Assume authorization (skip ack)")
 
+    # --- source-scan ---
+    src_parser = subparsers.add_parser(
+        "source-scan", help="Scan MCP server source code for shell-injection (Prompt-In-Shell-Out)"
+    )
+    src_parser.add_argument("path", help="File or directory of MCP server source to scan")
+    _add_scan_options(src_parser)
+
     # --- explain ---
     exp_parser = subparsers.add_parser(
         "explain", help="Explain a finding rule and show remediation guidance"
@@ -357,6 +364,8 @@ def main() -> None:
             _handle_behavior(args, scanner, config)
         elif args.command == "explain":
             _handle_explain(args)
+        elif args.command == "source-scan":
+            _handle_source_scan(args, config)
         else:
             parser.print_help()
     except KeyboardInterrupt:
@@ -567,6 +576,26 @@ def _handle_behavior(args, scanner: MCPScanner, config) -> None:
             results = {f"stdio:{args.server_command}": _behavior_result(tools, transcripts)}
     else:
         raise ValidationError("Specify 'stdio', 'url', or 'import'")
+
+    severity = args.severity or config.min_severity
+    results = _filter_results(results, severity)
+    output_format = args.format or config.output_format
+    output = _render_report(results, output_format)
+    if args.output:
+        output_path = validate_output_path(args.output)
+        output_path.write_text(output, encoding="utf-8")
+        print(f"[+] Report written to {output_path}")
+    else:
+        print(output)
+    _apply_fail_on(results, getattr(args, "fail_on", None))
+
+
+def _handle_source_scan(args, config) -> None:
+    from .auditor.source.scanner import SourceScanner
+
+    if not os.path.exists(args.path):
+        raise ValidationError(f"Path not found: {args.path}")
+    results = SourceScanner().scan(args.path)
 
     severity = args.severity or config.min_severity
     results = _filter_results(results, severity)
