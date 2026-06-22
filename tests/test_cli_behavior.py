@@ -27,9 +27,7 @@ def test_behavior_import_detects_atpa(tmp_path):
     assert res.returncode == 0, res.stderr
     report = json.loads(res.stdout)
     rules = {
-        finding["rule"]
-        for server in report["servers"].values()
-        for finding in server["findings"]
+        finding["rule"] for server in report["servers"].values() for finding in server["findings"]
     }
     assert "BEHAV_ATPA_TRANSITION" in rules
 
@@ -40,14 +38,21 @@ def test_behavior_import_supports_error_entries(tmp_path):
     f.write_text(json.dumps(transcript), encoding="utf-8")
 
     res = _run(
-        ["--no-log-file", "--no-metrics", "behavior", "import", str(f), "--format", "json",
-         "--severity", "INFO"]
+        [
+            "--no-log-file",
+            "--no-metrics",
+            "behavior",
+            "import",
+            str(f),
+            "--format",
+            "json",
+            "--severity",
+            "INFO",
+        ]
     )
     assert res.returncode == 0, res.stderr
     report = json.loads(res.stdout)
     rules = {
-        finding["rule"]
-        for server in report["servers"].values()
-        for finding in server["findings"]
+        finding["rule"] for server in report["servers"].values() for finding in server["findings"]
     }
     assert "BEHAV_CALL_ERROR" in rules
