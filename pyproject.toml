@@ -2,6 +2,66 @@
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "mcp-tool-auditor"
+description = "MCP Tool Poisoning Scanner — Defensive scanning + offensive pentest tooling for MCP servers. Maps to OWASP MCP Top 10."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Përparim Mjeku" }]
+keywords = [
+    "mcp",
+    "security",
+    "tool-poisoning",
+    "owasp",
+    "penetration-testing",
+    "llm",
+    "ai-security",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "pyyaml>=6.0",
+    "requests>=2.31.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "build>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/perparimmjeku/mcp-tool-auditor"
+Repository = "https://github.com/perparimmjeku/mcp-tool-auditor"
+Issues = "https://github.com/perparimmjeku/mcp-tool-auditor/issues"
+
+[project.scripts]
+mcp-tool-auditor = "mcp_tool_auditor.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "mcp_tool_auditor.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["mcp_tool_auditor*"]
+
+[tool.setuptools.package-data]
+"mcp_tool_auditor.auditor" = ["signatures/*.yaml"]
+
 [tool.black]
 line-length = 100
 target-version = ["py310", "py311", "py312"]
