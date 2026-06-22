@@ -5,7 +5,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
 [![OWASP MCP Top 10](https://img.shields.io/badge/OWASP-MCP03%20Tool%20Poisoning-red)](https://owasp.org/www-project-mcp-top-10/)
 
-`mcp-tool-auditor` is a comprehensive security scanner for Model Context Protocol (MCP) servers. It detects tool poisoning, full-schema poisoning (FSP), rug-pull attacks, tool shadowing, and ATPA (Advanced Tool Poisoning Attacks), while mapping findings to the OWASP MCP Top 10 framework.
+`mcp-tool-auditor` is a comprehensive security scanner for Model Context Protocol (MCP) servers. It detects tool poisoning, full-schema poisoning (FSP), rug-pull attacks (including newly shadowing tools), and ATPA (Advanced Tool Poisoning Attacks), while mapping findings to the OWASP MCP Top 10 framework.
 
 The project also includes authorized offensive tooling for penetration testers and security researchers to simulate realistic MCP attack scenarios in controlled environments.
 
@@ -22,7 +22,7 @@ The project also includes authorized offensive tooling for penetration testers a
 | Schema Anomaly Detection | Full-Schema Poisoning (FSP), sidenote parameter injection, enum injection, poisoned defaults, and required-array abuse |
 | Rug-Pull Detection | SHA-256 schema fingerprinting to detect unexpected tool definition changes |
 | Behavioral / ATPA Detection | Calls tools and inspects responses for the benign→malicious time-bomb signature, output injection, and exfil instructions |
-| OWASP Mapping | Maps findings to MCP01–MCP10 classifications |
+| OWASP Mapping | Labels findings across the OWASP MCP Top 10 (active detection for MCP01, MCP02, MCP03, MCP05) |
 
 ### Offensive Tooling
 
@@ -151,9 +151,12 @@ Use `--yes` only for non-interactive, authorized lab runs.
 |---|---|---|
 | MCP01 | Token Mismanagement & Secret Exposure | `ST_IGNORE_PREVIOUS`, `ST_BYPASS`, `ST_IGNORE_SECURITY` |
 | MCP02 | Privilege Escalation via Scope Creep | `HEUR_AGENCY`, credential-related signatures |
-| MCP03 | Tool Poisoning | Signatures, heuristics, FSP, rug-pull, and behavioral/ATPA detection |
-| MCP04 | Software Supply Chain Attacks | Rug-pull fingerprint mismatches and unexpected tool changes |
+| MCP03 | Tool Poisoning | Signatures, heuristics, FSP, rug-pull/shadowing, and behavioral/ATPA detection |
 | MCP05 | Command Injection & Execution | `ST_EXECUTE`, `ST_CODE_EXEC`, command-related schema findings |
+
+Findings are actively emitted for **MCP01, MCP02, MCP03, and MCP05**. Reports also
+recognize the remaining OWASP MCP Top 10 IDs (MCP04, MCP06–MCP10) by label, but the
+current analyzers do not yet emit findings for them.
 
 ---
 
