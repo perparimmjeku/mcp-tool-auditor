@@ -110,3 +110,13 @@ def test_behavior_import_sarif_and_fail_on(tmp_path):
         ]
     )
     assert res3.returncode == 0
+
+
+def test_explain_rule_and_list():
+    res = _run(["--no-log-file", "--no-metrics", "explain", "BEHAV_ATPA_TRANSITION"])
+    assert res.returncode == 0, res.stderr
+    assert "Remediation" in res.stdout
+
+    res2 = _run(["--no-log-file", "--no-metrics", "explain", "--list"])
+    assert res2.returncode == 0
+    assert "BEHAV_ATPA_TRANSITION" in res2.stdout

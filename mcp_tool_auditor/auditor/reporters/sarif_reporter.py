@@ -3,6 +3,7 @@
 import json
 
 from ... import __version__
+from .. import remediation
 from ..models import ScanResult, Severity
 
 # SARIF result levels
@@ -48,6 +49,11 @@ class SarifReporter:
                         "id": finding.rule,
                         "name": finding.rule,
                         "shortDescription": {"text": finding.rule.replace("_", " ").title()},
+                        "help": {
+                            "text": remediation.get_remediation(
+                                finding.rule, finding.owasp_id, finding.attack_type
+                            )
+                        },
                         "defaultConfiguration": {"level": _LEVEL.get(severity, "warning")},
                         "properties": {
                             "tags": ["security", "mcp", finding.owasp_id],

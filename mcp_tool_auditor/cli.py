@@ -12,6 +12,7 @@ import os
 import sys
 import time
 
+from .auditor import remediation
 from .auditor.analyzers.behavioral import BehavioralAnalyzer, CallResult
 from .auditor.analyzers.rugpull import RugPullDetector
 from .auditor.models import SEVERITY_LEVELS, ScanResult, Severity
@@ -300,6 +301,17 @@ Examples:
     for sub in (beh_stdio, beh_url):
         sub.add_argument("--yes", action="store_true", help="Assume authorization (skip ack)")
 
+    # --- explain ---
+    exp_parser = subparsers.add_parser(
+        "explain", help="Explain a finding rule and show remediation guidance"
+    )
+    exp_parser.add_argument(
+        "rule", nargs="?", help="Rule id or family (e.g. BEHAV_ATPA_TRANSITION)"
+    )
+    exp_parser.add_argument(
+        "--list", action="store_true", help="List rule families with specific guidance"
+    )
+
     return parser
 
 
@@ -339,6 +351,8 @@ def main() -> None:
             _handle_attack(args)
         elif args.command == "behavior":
             _handle_behavior(args, scanner, config)
+        elif args.command == "explain":
+            _handle_explain(args)
         else:
             parser.print_help()
     except KeyboardInterrupt:
@@ -548,6 +562,19 @@ def _handle_behavior(args, scanner: MCPScanner, config) -> None:
     else:
         print(output)
     _apply_fail_on(results, getattr(args, "fail_on", None))
+
+
+def _handle_explain(args) -> None:
+    if args.list or not args.rule:
+        print("Rule families with specific remediation guidance:\n")
+        for family in remediation.list_families():
+            print(f"  {family}")
+        print("\nRun 'mcp-tool-auditor explain <RULE>' for guidance on a specific rule.")
+        return
+    rule = args.rule
+    print(f"Rule: {rule}\n")
+    print("Remediation:")
+    print(f"  {remediation.get_remediation(rule)}")
 
 
 def _handle_register(args, scanner: MCPScanner) -> None:

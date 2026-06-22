@@ -55,3 +55,9 @@ def test_sarif_includes_owasp_and_location():
 def test_sarif_empty_results_is_valid():
     doc = json.loads(SarifReporter.generate({}))
     assert doc["runs"][0]["results"] == []
+
+
+def test_sarif_rule_includes_remediation_help():
+    run = json.loads(SarifReporter.generate(_results()))["runs"][0]
+    rule = next(r for r in run["tool"]["driver"]["rules"] if r["id"] == "FSP_DESC_INJECTION")
+    assert "help" in rule and rule["help"]["text"]
