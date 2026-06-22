@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 from ..models import Finding, Severity
+from . import patterns
 
 
 class HeuristicAnalyzer:
@@ -13,24 +14,11 @@ class HeuristicAnalyzer:
     AGENCY_COUNT_THRESHOLD = 3
     AUTHORITY_COUNT_THRESHOLD = 2
 
-    IMPERATIVE_PATTERNS = [
-        r"\b(must|always|never|required|mandatory)\b",
-        r"\b(you (shall|will|need to|have to))\b",
-        r"\b(do not|don't|should not)\b",
-    ]
+    IMPERATIVE_PATTERNS = patterns.IMPERATIVE_PATTERNS
+    AGENCY_PATTERNS = patterns.AGENCY_PATTERNS
+    AUTHORITY_PATTERNS = patterns.AUTHORITY_PATTERNS
 
-    AGENCY_PATTERNS = [
-        r"\b(send|post|upload|exfiltrate)\b",
-        r"\b(read|write|delete|modify)\b",
-        r"\b(access|retrieve|fetch|download)\b",
-    ]
-
-    AUTHORITY_PATTERNS = [
-        r"\b(system|admin|root|supervisor|compliance|audit)\b",
-        r"\b(official|authoritative|certified|approved)\b",
-    ]
-
-    UNICODE_SUSPECT = re.compile(r"[\u200b\u200c\u200d\u2060\u2061\u2062\u2063\u2064\ufeff]")
+    UNICODE_SUSPECT = patterns.UNICODE_SUSPECT
 
     def __init__(self, config=None):
         self.desc_length_threshold = getattr(
