@@ -14,9 +14,10 @@ import time
 
 from .auditor.analyzers.behavioral import BehavioralAnalyzer, CallResult
 from .auditor.analyzers.rugpull import RugPullDetector
-from .auditor.models import ScanResult, Severity
+from .auditor.models import SEVERITY_LEVELS, ScanResult, Severity
 from .auditor.reporters.json_reporter import JSONReporter
 from .auditor.reporters.markdown_reporter import MarkdownReporter
+from .auditor.reporters.sarif_reporter import SarifReporter
 from .auditor.scanner import MCPScanner
 from .config import load_config, set_config
 from .logging_config import LoggerFactory
@@ -57,7 +58,7 @@ def _print_rugpull_findings(findings) -> None:
 def _add_scan_options(parser, include_rugpull: bool = False) -> None:
     parser.add_argument(
         "--format",
-        choices=["json", "markdown"],
+        choices=["json", "markdown", "sarif"],
         default=None,
         help="Output format (default: config value or markdown)",
     )
@@ -71,6 +72,12 @@ def _add_scan_options(parser, include_rugpull: bool = False) -> None:
         choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
         default=None,
         help="Minimum severity to report (default: config value or INFO)",
+    )
+    parser.add_argument(
+        "--fail-on",
+        choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+        default=None,
+        help="Exit non-zero (code 2) if any finding at or above this severity is present (CI gate)",
     )
     if include_rugpull:
         parser.add_argument(
@@ -281,9 +288,15 @@ Examples:
 
     for sub in (beh_stdio, beh_url, beh_import):
         sub.add_argument("--calls", type=int, default=6, help="Calls per tool (default 6)")
-        sub.add_argument("--format", choices=["json", "markdown"], default=None)
+        sub.add_argument("--format", choices=["json", "markdown", "sarif"], default=None)
         sub.add_argument("--severity", default=None)
         sub.add_argument("--output", default=None)
+        sub.add_argument(
+            "--fail-on",
+            choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+            default=None,
+            help="Exit non-zero (code 2) if a finding at or above this severity is present",
+        )
     for sub in (beh_stdio, beh_url):
         sub.add_argument("--yes", action="store_true", help="Assume authorization (skip ack)")
 
@@ -344,11 +357,7 @@ def _handle_scan(args, scanner: MCPScanner, config, metrics_collector: MetricsCo
         results = _filter_results(results, severity)
 
         output_format = args.format or config.output_format
-        output = (
-            JSONReporter.generate(results)
-            if output_format == "json"
-            else MarkdownReporter.generate(results)
-        )
+        output = _render_report(results, output_format)
 
         if args.output:
             output_path = validate_output_path(args.output)
@@ -359,6 +368,7 @@ def _handle_scan(args, scanner: MCPScanner, config, metrics_collector: MetricsCo
 
         metrics_collector.record(_metrics_from_results(results, time.time() - start, True))
         logger.info("Scan completed in %.2fs", time.time() - start)
+        _apply_fail_on(results, getattr(args, "fail_on", None))
     except Exception as exc:
         metrics_collector.record(
             ScanMetrics.now(
@@ -399,6 +409,34 @@ def _run_scan(args, scanner: MCPScanner):
             raise ValidationError("Imported JSON must contain a tools array")
         return {args.path: scanner.scan_tool_list(tools)}
     raise ValidationError("Specify 'stdio', 'url', 'config', or 'import'")
+
+
+def _render_report(results, output_format: str) -> str:
+    if output_format == "json":
+        return JSONReporter.generate(results)
+    if output_format == "sarif":
+        return SarifReporter.generate(results)
+    return MarkdownReporter.generate(results)
+
+
+def _apply_fail_on(results, fail_on: str | None) -> None:
+    """Exit non-zero (code 2) if any finding meets the --fail-on severity threshold."""
+    if not fail_on:
+        return
+    threshold = SEVERITY_LEVELS.get(Severity(fail_on.upper()))
+    if threshold is None:
+        return
+    for result in results.values():
+        for finding in result.findings:
+            level = SEVERITY_LEVELS.get(finding.severity)
+            if level is not None and level <= threshold:
+                logger.warning(
+                    "Failing build: finding '%s' (%s) meets --fail-on %s",
+                    finding.rule,
+                    finding.severity.value,
+                    fail_on.upper(),
+                )
+                sys.exit(2)
 
 
 def _filter_results(results, min_severity: str):
@@ -502,17 +540,14 @@ def _handle_behavior(args, scanner: MCPScanner, config) -> None:
     severity = args.severity or config.min_severity
     results = _filter_results(results, severity)
     output_format = args.format or config.output_format
-    output = (
-        JSONReporter.generate(results)
-        if output_format == "json"
-        else MarkdownReporter.generate(results)
-    )
+    output = _render_report(results, output_format)
     if args.output:
         output_path = validate_output_path(args.output)
         output_path.write_text(output, encoding="utf-8")
         print(f"[+] Report written to {output_path}")
     else:
         print(output)
+    _apply_fail_on(results, getattr(args, "fail_on", None))
 
 
 def _handle_register(args, scanner: MCPScanner) -> None:
