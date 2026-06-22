@@ -12,8 +12,9 @@ import os
 import sys
 import time
 
+from .auditor.analyzers.behavioral import BehavioralAnalyzer, CallResult
 from .auditor.analyzers.rugpull import RugPullDetector
-from .auditor.models import Severity
+from .auditor.models import ScanResult, Severity
 from .auditor.reporters.json_reporter import JSONReporter
 from .auditor.reporters.markdown_reporter import MarkdownReporter
 from .auditor.scanner import MCPScanner
@@ -21,6 +22,7 @@ from .config import load_config, set_config
 from .logging_config import LoggerFactory
 from .metrics import MetricsCollector, ScanMetrics
 from .offensive.poisoner import PoisonedServerGenerator
+from .security import print_security_warning, require_ack
 from .validation import (
     ArgparseValidation,
     ValidationError,
@@ -263,6 +265,28 @@ Examples:
         help="Number of requests before swapping to poisoned tools",
     )
 
+    # --- behavior ---
+    beh_parser = subparsers.add_parser(
+        "behavior", help="Behavioral/runtime probing for ATPA & response injection"
+    )
+    beh_sub = beh_parser.add_subparsers(dest="behavior_type")
+
+    beh_stdio = beh_sub.add_parser("stdio", help="Probe a stdio-based MCP server")
+    beh_stdio.add_argument("server_command", type=ArgparseValidation.command)
+    beh_stdio.add_argument("args", nargs=argparse.REMAINDER)
+    beh_url = beh_sub.add_parser("url", help="Probe a URL-based MCP server")
+    beh_url.add_argument("url", type=ArgparseValidation.url)
+    beh_import = beh_sub.add_parser("import", help="Analyze a recorded response transcript")
+    beh_import.add_argument("path", type=ArgparseValidation.file)
+
+    for sub in (beh_stdio, beh_url, beh_import):
+        sub.add_argument("--calls", type=int, default=6, help="Calls per tool (default 6)")
+        sub.add_argument("--format", choices=["json", "markdown"], default=None)
+        sub.add_argument("--severity", default=None)
+        sub.add_argument("--output", default=None)
+    for sub in (beh_stdio, beh_url):
+        sub.add_argument("--yes", action="store_true", help="Assume authorization (skip ack)")
+
     return parser
 
 
@@ -300,6 +324,8 @@ def main() -> None:
             _handle_generate(args)
         elif args.command == "attack":
             _handle_attack(args)
+        elif args.command == "behavior":
+            _handle_behavior(args, scanner, config)
         else:
             parser.print_help()
     except KeyboardInterrupt:
@@ -417,6 +443,76 @@ def _metrics_from_results(results, duration: float, success: bool) -> ScanMetric
         server_count=len(results),
         success=success,
     )
+
+
+def _responses_from_transcript(value) -> list[CallResult]:
+    results: list[CallResult] = []
+    for i, item in enumerate(value):
+        if isinstance(item, str):
+            results.append(CallResult(index=i, text=item))
+        elif isinstance(item, dict):
+            results.append(
+                CallResult(index=i, text=str(item.get("text", "")), error=item.get("error"))
+            )
+        else:
+            results.append(CallResult(index=i, text=str(item)))
+    return results
+
+
+def _behavior_result(tools, transcripts, server_url=None) -> ScanResult:
+    analyzer = BehavioralAnalyzer()
+    by_name = {t.get("name", "unknown"): t for t in tools}
+    findings = []
+    for name, responses in transcripts.items():
+        findings.extend(analyzer.analyze(by_name.get(name, {"name": name}), responses))
+    return ScanResult(
+        tools_scanned=len(transcripts),
+        findings=findings,
+        server_url=server_url,
+        tools=list(by_name.values()),
+    )
+
+
+def _handle_behavior(args, scanner: MCPScanner, config) -> None:
+    if args.behavior_type == "import":
+        data = validate_json_file(args.path)
+        if not isinstance(data, dict):
+            raise ValidationError(
+                "Transcript file must be a JSON object mapping tool name to responses"
+            )
+        transcripts = {name: _responses_from_transcript(v) for name, v in data.items()}
+        tools = [{"name": name} for name in transcripts]
+        results = {args.path: _behavior_result(tools, transcripts)}
+    elif args.behavior_type in {"stdio", "url"}:
+        print_security_warning()
+        if not require_ack(auto_ack=getattr(args, "yes", False)):
+            print("[*] Operation cancelled")
+            sys.exit(1)
+        if args.behavior_type == "url":
+            tools, transcripts = scanner.probe_url(args.url, calls=args.calls)
+            results = {args.url: _behavior_result(tools, transcripts, server_url=args.url)}
+        else:
+            tools, transcripts = scanner.probe_stdio(
+                args.server_command, args.args, calls=args.calls
+            )
+            results = {f"stdio:{args.server_command}": _behavior_result(tools, transcripts)}
+    else:
+        raise ValidationError("Specify 'stdio', 'url', or 'import'")
+
+    severity = args.severity or config.min_severity
+    results = _filter_results(results, severity)
+    output_format = args.format or config.output_format
+    output = (
+        JSONReporter.generate(results)
+        if output_format == "json"
+        else MarkdownReporter.generate(results)
+    )
+    if args.output:
+        output_path = validate_output_path(args.output)
+        output_path.write_text(output, encoding="utf-8")
+        print(f"[+] Report written to {output_path}")
+    else:
+        print(output)
 
 
 def _handle_register(args, scanner: MCPScanner) -> None:
