@@ -623,3 +623,36 @@ def test_extract_response_text_falls_back_to_json():
     result = {"status": "ok"}
     out = MCPScanner._extract_response_text(result)
     assert "status" in out and "ok" in out
+
+
+def test_parse_sse_extracts_jsonrpc_result():
+    from mcp_tool_auditor.auditor.scanner import MCPScanner
+
+    body = 'event: message\ndata: {"jsonrpc": "2.0", "id": 2, "result": {"tools": []}}\n\n'
+    out = MCPScanner._parse_sse(body)
+    assert out["result"] == {"tools": []}
+
+
+def test_parse_sse_ignores_comments_and_done_sentinel():
+    from mcp_tool_auditor.auditor.scanner import MCPScanner
+
+    body = ': keep-alive\nevent: message\ndata: [DONE]\ndata: {"result": {"ok": true}}\n'
+    assert MCPScanner._parse_sse(body) == {"result": {"ok": True}}
+
+
+def test_response_to_jsonrpc_handles_sse_and_json():
+    from mcp_tool_auditor.auditor.scanner import MCPScanner
+
+    class FakeResp:
+        def __init__(self, ctype, text="", payload=None):
+            self.headers = {"Content-Type": ctype}
+            self.text = text
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    sse = FakeResp("text/event-stream; charset=utf-8", text='data: {"result": 1}\n')
+    assert MCPScanner._response_to_jsonrpc(sse) == {"result": 1}
+    js = FakeResp("application/json", payload={"result": 2})
+    assert MCPScanner._response_to_jsonrpc(js) == {"result": 2}

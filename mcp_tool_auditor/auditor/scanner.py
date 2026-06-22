@@ -169,7 +169,10 @@ class MCPScanner:
                         "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
                     },
                 },
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                },
                 timeout=timeout,
             )
             resp.raise_for_status()
@@ -180,7 +183,10 @@ class MCPScanner:
                     "jsonrpc": "2.0",
                     "method": "notifications/initialized",
                 },
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                },
                 timeout=timeout,
             )
             resp.raise_for_status()
@@ -189,11 +195,14 @@ class MCPScanner:
             resp = requests.post(
                 url,
                 json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                },
                 timeout=timeout,
             )
             resp.raise_for_status()
-            result = resp.json()
+            result = self._response_to_jsonrpc(resp)
             if "error" in result:
                 raise RuntimeError(self._format_jsonrpc_error(result["error"]))
             tools = result.get("result", {}).get("tools", [])
@@ -222,6 +231,36 @@ class MCPScanner:
         )
 
     @staticmethod
+    def _parse_sse(body: str) -> dict[str, Any]:
+        """Extract a JSON-RPC message from a Server-Sent Events response body."""
+        last: dict[str, Any] = {}
+        for line in body.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("data:"):
+                continue
+            data = stripped[len("data:") :].strip()
+            if not data or data == "[DONE]":
+                continue
+            try:
+                obj = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(obj, dict):
+                last = obj
+                if "result" in obj or "error" in obj:
+                    return obj
+        return last
+
+    @staticmethod
+    def _response_to_jsonrpc(resp: Any) -> dict[str, Any]:
+        """Decode a requests response as JSON or SSE depending on Content-Type."""
+        headers = getattr(resp, "headers", {}) or {}
+        ctype = headers.get("Content-Type", "") or headers.get("content-type", "")
+        if "text/event-stream" in ctype.lower():
+            return MCPScanner._parse_sse(resp.text)
+        return resp.json()
+
+    @staticmethod
     def _extract_response_text(result: Any) -> str:
         """Extract human-readable text from an MCP tools/call result."""
         if isinstance(result, dict):
@@ -244,12 +283,15 @@ class MCPScanner:
 
         timeout = timeout or self.config.timeout_url
         validate_url(url)
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }
 
         def _post(payload: dict[str, Any]) -> dict[str, Any]:
             resp = requests.post(url, json=payload, headers=headers, timeout=timeout)
             resp.raise_for_status()
-            return resp.json()
+            return self._response_to_jsonrpc(resp)
 
         _post(
             {
