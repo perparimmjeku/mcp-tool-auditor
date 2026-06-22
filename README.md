@@ -50,7 +50,7 @@ pip install -e .
 
 ```bash
 python -m pip install -e ".[dev]"
-python -m unittest discover -v
+python -m pytest
 ```
 
 ---
@@ -151,7 +151,7 @@ Use `--yes` only for non-interactive, authorized lab runs.
 |---|---|---|
 | MCP01 | Token Mismanagement & Secret Exposure | `ST_IGNORE_PREVIOUS`, `ST_BYPASS`, `ST_IGNORE_SECURITY` |
 | MCP02 | Privilege Escalation via Scope Creep | `HEUR_AGENCY`, credential-related signatures |
-| MCP03 | Tool Poisoning | Signatures, heuristics, FSP, rug-pull, and shadowing detection |
+| MCP03 | Tool Poisoning | Signatures, heuristics, FSP, rug-pull, and behavioral/ATPA detection |
 | MCP04 | Software Supply Chain Attacks | Rug-pull fingerprint mismatches and unexpected tool changes |
 | MCP05 | Command Injection & Execution | `ST_EXECUTE`, `ST_CODE_EXEC`, command-related schema findings |
 
@@ -181,6 +181,11 @@ mcp-tool-auditor/
 ├── mcp_tool_auditor/
 │   ├── __init__.py
 │   ├── cli.py
+│   ├── config.py
+│   ├── logging_config.py
+│   ├── metrics.py
+│   ├── security.py
+│   ├── validation.py
 │   ├── auditor/
 │   │   ├── __init__.py
 │   │   ├── scanner.py
@@ -190,7 +195,9 @@ mcp-tool-auditor/
 │   │   │   ├── static.py
 │   │   │   ├── heuristic.py
 │   │   │   ├── schema.py
-│   │   │   └── rugpull.py
+│   │   │   ├── rugpull.py
+│   │   │   ├── behavioral.py
+│   │   │   └── patterns.py
 │   │   ├── signatures/
 │   │   │   ├── __init__.py
 │   │   │   ├── descriptions.yaml
@@ -207,12 +214,15 @@ mcp-tool-auditor/
 ├── tests/
 │   ├── __init__.py
 │   ├── test_scanner.py
+│   ├── test_patterns.py
+│   ├── test_behavioral.py
+│   ├── test_cli_behavior.py
+│   ├── test_behavior_integration.py
 │   └── fixtures/
 │       ├── __init__.py
 │       └── poisoned_tools.json
 ├── config.yaml
 ├── pyproject.toml
-├── setup.py
 ├── CONTRIBUTING.md
 ├── SECURITY.md
 ├── LICENSE
@@ -223,7 +233,8 @@ mcp-tool-auditor/
 
 ## Configuration
 
-See `config.yaml` for example scanner settings. CLI flags are currently the source of truth for runtime behavior.
+See `config.yaml` for example scanner settings. Pass a config file with `--config`
+(JSON or YAML); CLI flags override the file for output format and minimum severity.
 
 ### Default Configuration
 
