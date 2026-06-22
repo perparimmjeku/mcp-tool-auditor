@@ -1,5 +1,6 @@
 import json
 
+from ... import __version__
 from ..models import ScanResult
 
 
@@ -9,7 +10,7 @@ class JSONReporter:
         output = {
             "scan_metadata": {
                 "tool": "mcp-tool-auditor",
-                "version": "1.0.0",
+                "version": __version__,
                 "owasp_version": "OWASP MCP Top 10 (2025)",
             },
             "summary": {

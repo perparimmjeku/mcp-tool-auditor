@@ -4,6 +4,7 @@ import selectors
 import subprocess
 from typing import Any
 
+from .. import __version__
 from ..config import get_config
 from ..validation import ValidationError, validate_file_exists, validate_json_file, validate_url
 from .analyzers.behavioral import CallResult, synthesize_arguments
@@ -83,7 +84,7 @@ class MCPScanner:
                     "params": {
                         "protocolVersion": "2025-03-26",
                         "capabilities": {},
-                        "clientInfo": {"name": "mcp-tool-auditor", "version": "1.0.0"},
+                        "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
                     },
                 },
             )
@@ -165,7 +166,7 @@ class MCPScanner:
                     "params": {
                         "protocolVersion": "2025-03-26",
                         "capabilities": {},
-                        "clientInfo": {"name": "mcp-tool-auditor", "version": "1.0.0"},
+                        "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
                     },
                 },
                 headers={"Content-Type": "application/json"},
@@ -258,7 +259,7 @@ class MCPScanner:
                 "params": {
                     "protocolVersion": "2025-03-26",
                     "capabilities": {},
-                    "clientInfo": {"name": "mcp-tool-auditor", "version": "1.0.0"},
+                    "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
                 },
             }
         )
@@ -318,7 +319,7 @@ class MCPScanner:
                     "params": {
                         "protocolVersion": "2025-03-26",
                         "capabilities": {},
-                        "clientInfo": {"name": "mcp-tool-auditor", "version": "1.0.0"},
+                        "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
                     },
                 },
             )
