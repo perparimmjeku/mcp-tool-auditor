@@ -2,8 +2,13 @@
 
 **Scan MCP server tool definitions for poisoning, injection, and OWASP MCP Top 10 vulnerabilities.**
 
+[![CI](https://github.com/perparimmjeku/mcp-tool-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/perparimmjeku/mcp-tool-auditor/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/mcp-tool-auditor)](https://pypi.org/project/mcp-tool-auditor/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![OWASP MCP Top 10](https://img.shields.io/badge/OWASP-MCP03%20Tool%20Poisoning-red)](https://owasp.org/www-project-mcp-top-10/)
+
+> **Most MCP scanners read tool definitions. This one also watches tool _behavior_** — it calls tools and catches Advanced Tool Poisoning Attacks (ATPA) that look benign on paper and turn malicious at runtime.
 
 `mcp-tool-auditor` is a comprehensive security scanner for Model Context Protocol (MCP) servers. It detects tool poisoning, full-schema poisoning (FSP), rug-pull attacks (including newly shadowing tools), and ATPA (Advanced Tool Poisoning Attacks), while mapping findings to the OWASP MCP Top 10 framework.
 
@@ -109,10 +114,71 @@ Findings: `BEHAV_ATPA_TRANSITION` (benign→malicious time-bomb), `BEHAV_OUTPUT_
 `BEHAV_RESPONSE_DIVERGENCE`, and `BEHAV_CALL_ERROR`. Live modes require an
 authorization acknowledgement (`--yes` or `MCP_TOOL_AUDITOR_ASSUME_AUTHORIZED=1`).
 
+### Auto-Discover and Scan Local MCP Configs
+
+```bash
+# Finds and scans configs for Claude Desktop, Cursor, VS Code, Windsurf, Zed
+mcp-tool-auditor scan local
+```
+
+### Export SARIF and Explain Findings
+
+```bash
+# SARIF for GitHub code-scanning / GitLab
+mcp-tool-auditor scan import tools.json --format sarif -o results.sarif
+
+# Get remediation guidance for any finding rule
+mcp-tool-auditor explain BEHAV_ATPA_TRANSITION
+mcp-tool-auditor explain --list
+```
+
 ### Generate Offensive Test Servers
 
 ```bash
 mcp-tool-auditor generate all --output-dir ./pentest_servers
+```
+
+---
+
+## CI/CD Integration
+
+Gate merges on poisoning findings and upload results to GitHub Security.
+
+### GitHub Action
+
+```yaml
+# .github/workflows/mcp-audit.yml
+name: MCP Audit
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # to upload SARIF
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan tool definitions
+        uses: perparimmjeku/mcp-tool-auditor@main
+        with:
+          command: scan import tools.json --format sarif -o mcp.sarif --fail-on HIGH
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: mcp.sarif
+```
+
+> Until the package is on PyPI, point the action at the repo:
+> `with: { install-spec: "git+https://github.com/perparimmjeku/mcp-tool-auditor.git" }`
+
+### Plain CLI in any pipeline
+
+```bash
+# Exit code 2 if any HIGH+ finding is present — fails the build
+mcp-tool-auditor scan import tools.json --fail-on HIGH
 ```
 
 ### Verbose Output, Logs, and Metrics
@@ -193,6 +259,8 @@ mcp-tool-auditor/
 │   │   ├── __init__.py
 │   │   ├── scanner.py
 │   │   ├── models.py
+│   │   ├── discovery.py
+│   │   ├── remediation.py
 │   │   ├── analyzers/
 │   │   │   ├── __init__.py
 │   │   │   ├── static.py
@@ -208,7 +276,8 @@ mcp-tool-auditor/
 │   │   └── reporters/
 │   │       ├── __init__.py
 │   │       ├── json_reporter.py
-│   │       └── markdown_reporter.py
+│   │       ├── markdown_reporter.py
+│   │       └── sarif_reporter.py
 │   └── offensive/
 │       ├── __init__.py
 │       ├── poisoner.py
