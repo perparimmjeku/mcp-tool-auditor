@@ -21,6 +21,7 @@ The project also includes authorized offensive tooling for penetration testers a
 | Heuristic Analysis | Imperative language scoring, authority spoofing, Unicode hidden characters, and excessive agency claims |
 | Schema Anomaly Detection | Full-Schema Poisoning (FSP), sidenote parameter injection, enum injection, poisoned defaults, and required-array abuse |
 | Rug-Pull Detection | SHA-256 schema fingerprinting to detect unexpected tool definition changes |
+| Behavioral / ATPA Detection | Calls tools and inspects responses for the benign→malicious time-bomb signature, output injection, and exfil instructions |
 | OWASP Mapping | Maps findings to MCP01–MCP10 classifications |
 
 ### Offensive Tooling
@@ -88,6 +89,25 @@ mcp-tool-auditor register url http://localhost:8080/mcp
 ```bash
 mcp-tool-auditor check url http://localhost:8080/mcp
 ```
+
+### Behavioral / ATPA Detection
+
+Static scans read tool *definitions*; behavioral probing actually calls tools and
+inspects their *responses* to catch Advanced Tool Poisoning Attacks (ATPA) — tools
+that act benign, then return poisoned output after a few calls.
+
+```bash
+# Live probe (executes real tool calls — authorized testing only)
+mcp-tool-auditor behavior url http://localhost:8080/mcp --calls 6 --yes
+mcp-tool-auditor behavior stdio --calls 6 -- npx @modelcontextprotocol/server-everything
+
+# Offline: analyze a recorded transcript (tool name -> list of response strings)
+mcp-tool-auditor behavior import responses.json --format json
+```
+
+Findings: `BEHAV_ATPA_TRANSITION` (benign→malicious time-bomb), `BEHAV_OUTPUT_INJECTION`,
+`BEHAV_RESPONSE_DIVERGENCE`, and `BEHAV_CALL_ERROR`. Live modes require an
+authorization acknowledgement (`--yes` or `MCP_TOOL_AUDITOR_ASSUME_AUTHORIZED=1`).
 
 ### Generate Offensive Test Servers
 
