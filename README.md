@@ -114,6 +114,21 @@ Findings: `BEHAV_ATPA_TRANSITION` (benign→malicious time-bomb), `BEHAV_OUTPUT_
 `BEHAV_RESPONSE_DIVERGENCE`, and `BEHAV_CALL_ERROR`. Live modes require an
 authorization acknowledgement (`--yes` or `MCP_TOOL_AUDITOR_ASSUME_AUTHORIZED=1`).
 
+### Authenticated Scanning (real engagements)
+
+```bash
+# Auth header + route through Burp; tune signal with confidence and suppressions
+mcp-tool-auditor scan url https://target/mcp \
+  -H "Authorization: Bearer $TOKEN" \
+  --proxy http://127.0.0.1:8080 \
+  --min-confidence HIGH \
+  --suppress HEUR_IMPERATIVE
+```
+
+Findings carry a **confidence** level (HIGH/MEDIUM/LOW); `--min-confidence` filters
+noisy heuristics and `--suppressions <file>` silences accepted false positives.
+URL transport speaks full MCP Streamable HTTP (session id + protocol-version headers).
+
 ### Auto-Discover and Scan Local MCP Configs
 
 ```bash

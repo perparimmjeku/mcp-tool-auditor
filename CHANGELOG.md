@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-23
+
+### Added
+- **Authenticated scanning & proxy** — `--header "Authorization: Bearer ..."` (repeatable)
+  and `--proxy` on URL scan/behavior, so the tool works against auth-protected MCP
+  servers and can route through an intercepting proxy (Burp) in real engagements.
+- **Full MCP Streamable HTTP** — captures `Mcp-Session-Id` and sends it plus
+  `MCP-Protocol-Version` on post-initialize requests.
+- **Confidence scoring** — findings carry HIGH/MEDIUM/LOW confidence (in JSON/SARIF);
+  `--min-confidence` filters noisy heuristics.
+- **Suppressions** — `--suppress RULE` and `--suppressions FILE` to silence accepted
+  false positives by rule (optionally scoped to a tool).
+- **mypy** type-checking in CI (clean across the codebase).
+
 ## [1.1.0] - 2026-06-23
 
 ### Added
