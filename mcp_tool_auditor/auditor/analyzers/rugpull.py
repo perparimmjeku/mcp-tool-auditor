@@ -136,7 +136,7 @@ class RugPullDetector:
 
     def list_registrations(self) -> dict[str, str]:
         """List all registered server baselines."""
-        registrations = {}
+        registrations: dict[str, str] = {}
         if not os.path.isdir(self._fp_dir):
             return registrations
         for fname in os.listdir(self._fp_dir):

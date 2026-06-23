@@ -1,6 +1,7 @@
 """SARIF 2.1.0 reporter for GitHub code-scanning / GitLab / CI integration."""
 
 import json
+from typing import Any
 
 from ... import __version__
 from .. import remediation
@@ -61,7 +62,7 @@ class SarifReporter:
                         },
                     }
 
-                location = {
+                location: dict[str, Any] = {
                     "logicalLocations": [
                         {
                             "name": finding.tool_name or server_name,

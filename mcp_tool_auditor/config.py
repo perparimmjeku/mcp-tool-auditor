@@ -12,7 +12,7 @@ from typing import Any
 try:
     import yaml
 except ImportError:  # pragma: no cover - PyYAML is a package dependency
-    yaml = None
+    yaml = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 

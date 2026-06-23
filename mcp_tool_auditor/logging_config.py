@@ -111,7 +111,7 @@ class _JsonLoggingHandler(logging.FileHandler):
             payload["exception"] = self.format(record)
 
         try:
-            self.stream.write(json.dumps(payload, sort_keys=True) + "\n")
+            self.stream.write(json.dumps(payload, sort_keys=True) + "\n")  # type: ignore[union-attr]
             self.flush()
         except Exception:
             self.handleError(record)

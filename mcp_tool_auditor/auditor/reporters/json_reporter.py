@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from ... import __version__
 from ..models import ScanResult
@@ -7,7 +8,7 @@ from ..models import ScanResult
 class JSONReporter:
     @staticmethod
     def generate(results: dict[str, ScanResult]) -> str:
-        output = {
+        output: dict[str, Any] = {
             "scan_metadata": {
                 "tool": "mcp-tool-auditor",
                 "version": __version__,

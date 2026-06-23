@@ -573,8 +573,8 @@ def _filter_results(results, min_severity: str):
 
 
 def _metrics_from_results(results, duration: float, success: bool) -> ScanMetrics:
-    severity_counts = {}
-    owasp_counts = {}
+    severity_counts: dict[str, int] = {}
+    owasp_counts: dict[str, int] = {}
     findings_total = 0
     tools_scanned = 0
 

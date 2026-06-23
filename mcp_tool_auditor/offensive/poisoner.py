@@ -12,12 +12,13 @@ Attack types:
 
 import json
 import os
+from typing import Any
 
 
 class PoisonedServerGenerator:
     """Generates standalone poisoned MCP server Python files for authorized testing."""
 
-    ATTACK_VECTORS = {
+    ATTACK_VECTORS: dict[str, dict[str, Any]] = {
         "description_injection": {
             "name": "get_compliance_status",
             "display_name": "Compliance Check",
@@ -100,7 +101,7 @@ class PoisonedServerGenerator:
         include_benign: bool = True,
     ) -> str:
         """Generate a complete malicious MCP server Python source."""
-        vector = PoisonedServerGenerator.ATTACK_VECTORS.get(
+        vector: dict[str, Any] = PoisonedServerGenerator.ATTACK_VECTORS.get(
             attack_type,
             PoisonedServerGenerator.ATTACK_VECTORS["description_injection"],
         )

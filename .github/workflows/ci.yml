@@ -33,5 +33,8 @@ jobs:
       - name: Format check with black
         run: black --check mcp_tool_auditor tests
 
+      - name: Type-check with mypy
+        run: mypy mcp_tool_auditor
+
       - name: Run tests
         run: python -m pytest tests/ -v --cov=mcp_tool_auditor --cov-report=xml

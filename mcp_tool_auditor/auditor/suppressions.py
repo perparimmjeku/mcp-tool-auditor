@@ -9,7 +9,7 @@ from typing import Any
 try:
     import yaml
 except ImportError:  # pragma: no cover - PyYAML is a dependency
-    yaml = None
+    yaml = None  # type: ignore[assignment]
 
 
 def load(path: str) -> list[dict[str, Any]]:

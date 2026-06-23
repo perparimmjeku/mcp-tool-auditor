@@ -6,7 +6,7 @@ from typing import Any
 try:
     import yaml
 except ImportError:  # pragma: no cover - exercised in minimal local installs
-    yaml = None
+    yaml = None  # type: ignore[assignment]
 
 from ..models import Finding, Severity
 
@@ -22,7 +22,7 @@ class StaticAnalyzer:
         "info_severity": Severity.INFO,
     }
 
-    def __init__(self, custom_signatures: list[dict[str, Any]] = None):
+    def __init__(self, custom_signatures: list[dict[str, Any]] | None = None):
         self._builtin = self._load_builtin_signatures()
         self._custom = custom_signatures or []
 
