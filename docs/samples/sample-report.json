@@ -1,0 +1,135 @@
+{
+  "scan_metadata": {
+    "tool": "mcp-tool-auditor",
+    "version": "1.2.0",
+    "owasp_version": "OWASP MCP Top 10 (2025)"
+  },
+  "summary": {
+    "total_servers": 1,
+    "total_tools": 5,
+    "total_findings": 9,
+    "by_severity": {
+      "HIGH": 3,
+      "MEDIUM": 6
+    },
+    "by_owasp_id": {
+      "MCP03": 8,
+      "MCP02": 1
+    }
+  },
+  "servers": {
+    "tests/fixtures/poisoned_tools.json": {
+      "tools_scanned": 5,
+      "findings": [
+        {
+          "severity": "HIGH",
+          "rule": "ST_OVERRIDE",
+          "message": "Tool 'get_compliance_status': Attempting to supersede agent configuration.",
+          "owasp_id": "MCP03",
+          "attack_type": "tool_poisoning",
+          "field": null,
+          "tool_name": "get_compliance_status",
+          "file": null,
+          "line": null,
+          "confidence": "HIGH"
+        },
+        {
+          "severity": "MEDIUM",
+          "rule": "ST_READ_FILE",
+          "message": "Tool 'get_compliance_status': File read capability mentioned \u2014 potential sensitive data access.",
+          "owasp_id": "MCP03",
+          "attack_type": "sensitive_access",
+          "field": null,
+          "tool_name": "get_compliance_status",
+          "file": null,
+          "line": null,
+          "confidence": "HIGH"
+        },
+        {
+          "severity": "MEDIUM",
+          "rule": "HEUR_IMPERATIVE",
+          "message": "Tool 'get_compliance_status': 2 imperative/directive patterns \u2014 tool description issues commands to the agent.",
+          "owasp_id": "MCP03",
+          "attack_type": "tool_poisoning",
+          "field": null,
+          "tool_name": "get_compliance_status",
+          "file": null,
+          "line": null,
+          "confidence": "LOW"
+        },
+        {
+          "severity": "HIGH",
+          "rule": "HEUR_AUTHORITY_SPOOF",
+          "message": "Tool 'get_compliance_status': 9 authority-claim patterns \u2014 tool may be spoofing system-level authority.",
+          "owasp_id": "MCP03",
+          "attack_type": "authority_spoofing",
+          "field": null,
+          "tool_name": "get_compliance_status",
+          "file": null,
+          "line": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "severity": "MEDIUM",
+          "rule": "FSP_PARAM_NAME",
+          "message": "Tool 'data_processor': Parameter 'sidenote' matches FSP-suspicious name 'sidenote' \u2014 possible hidden instruction injection.",
+          "owasp_id": "MCP03",
+          "attack_type": "full_schema_poisoning",
+          "field": "inputSchema.properties.sidenote",
+          "tool_name": "data_processor",
+          "file": null,
+          "line": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "severity": "MEDIUM",
+          "rule": "ST_CREDENTIAL",
+          "message": "Tool 'weather_service': AWS credential exposure risk.",
+          "owasp_id": "MCP02",
+          "attack_type": "credential_exposure",
+          "field": null,
+          "tool_name": "weather_service",
+          "file": null,
+          "line": null,
+          "confidence": "HIGH"
+        },
+        {
+          "severity": "HIGH",
+          "rule": "ST_ALWAYS_USE",
+          "message": "Tool 'read_file': Tool description contains 'always use this tool' \u2014 overriding agent tool selection.",
+          "owasp_id": "MCP03",
+          "attack_type": "tool_poisoning",
+          "field": null,
+          "tool_name": "read_file",
+          "file": null,
+          "line": null,
+          "confidence": "HIGH"
+        },
+        {
+          "severity": "MEDIUM",
+          "rule": "ST_READ_FILE",
+          "message": "Tool 'read_file': File read capability mentioned \u2014 potential sensitive data access.",
+          "owasp_id": "MCP03",
+          "attack_type": "sensitive_access",
+          "field": null,
+          "tool_name": "read_file",
+          "file": null,
+          "line": null,
+          "confidence": "HIGH"
+        },
+        {
+          "severity": "MEDIUM",
+          "rule": "ST_DATA_EXFIL",
+          "message": "Tool 'read_file': Potential data exfiltration via HTTP.",
+          "owasp_id": "MCP03",
+          "attack_type": "data_exfiltration",
+          "field": null,
+          "tool_name": "read_file",
+          "file": null,
+          "line": null,
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  }
+}

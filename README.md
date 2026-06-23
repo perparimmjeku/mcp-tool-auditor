@@ -240,6 +240,14 @@ Use `--yes` only for non-interactive, authorized lab runs.
 
 ---
 
+## Detection Coverage & Sample Reports
+
+- **[docs/RULES.md](docs/RULES.md)** — full catalog of all 61 detection rules with confidence levels.
+- **Sample output** from a poisoned fixture: [markdown](docs/samples/sample-report.md) ·
+  [json](docs/samples/sample-report.json) · [sarif](docs/samples/sample-report.sarif).
+
+---
+
 ## OWASP MCP Top 10 Mapping
 
 | OWASP ID | Issue | Detection |
