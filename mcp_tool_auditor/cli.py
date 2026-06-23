@@ -105,6 +105,19 @@ def _add_scan_options(parser, include_rugpull: bool = False) -> None:
             action="store_true",
             help="Also compare URL results against a registered rug-pull baseline",
         )
+        parser.add_argument(
+            "--header",
+            "-H",
+            action="append",
+            default=[],
+            metavar="K:V",
+            help="Extra HTTP header for URL servers, e.g. 'Authorization: Bearer ...' (repeatable)",
+        )
+        parser.add_argument(
+            "--proxy",
+            default=None,
+            help="Route URL requests through an HTTP proxy (e.g. Burp at http://127.0.0.1:8080)",
+        )
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -307,6 +320,8 @@ Examples:
     beh_stdio.add_argument("args", nargs=argparse.REMAINDER)
     beh_url = beh_sub.add_parser("url", help="Probe a URL-based MCP server")
     beh_url.add_argument("url", type=ArgparseValidation.url)
+    beh_url.add_argument("--header", "-H", action="append", default=[], metavar="K:V")
+    beh_url.add_argument("--proxy", default=None)
     beh_import = beh_sub.add_parser("import", help="Analyze a recorded response transcript")
     beh_import.add_argument("path", type=ArgparseValidation.file)
 
@@ -435,6 +450,17 @@ def _handle_scan(args, scanner: MCPScanner, config, metrics_collector: MetricsCo
         raise
 
 
+def _parse_headers(raw: list[str]) -> dict[str, str]:
+    """Parse 'Key: Value' header strings into a dict."""
+    headers: dict[str, str] = {}
+    for item in raw or []:
+        if ":" not in item:
+            raise ValidationError(f"Invalid --header '{item}', expected 'Key: Value'")
+        key, value = item.split(":", 1)
+        headers[key.strip()] = value.strip()
+    return headers
+
+
 def _run_scan(args, scanner: MCPScanner):
     if args.scan_type == "stdio":
         result = scanner.scan_server_stdio(args.server_command, args.args)
@@ -443,6 +469,8 @@ def _run_scan(args, scanner: MCPScanner):
         result = scanner.scan_server_url(
             args.url,
             check_rugpull=args.check_rugpull,
+            extra_headers=_parse_headers(getattr(args, "header", [])),
+            proxy=getattr(args, "proxy", None),
         )
         return {args.url: result}
     if args.scan_type == "config":
@@ -613,7 +641,12 @@ def _handle_behavior(args, scanner: MCPScanner, config) -> None:
             print("[*] Operation cancelled")
             sys.exit(1)
         if args.behavior_type == "url":
-            tools, transcripts = scanner.probe_url(args.url, calls=args.calls)
+            tools, transcripts = scanner.probe_url(
+                args.url,
+                calls=args.calls,
+                extra_headers=_parse_headers(getattr(args, "header", [])),
+                proxy=getattr(args, "proxy", None),
+            )
             results = {args.url: _behavior_result(tools, transcripts, server_url=args.url)}
         else:
             tools, transcripts = scanner.probe_stdio(

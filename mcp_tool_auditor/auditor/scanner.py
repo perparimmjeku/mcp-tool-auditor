@@ -16,6 +16,8 @@ from .models import Finding, ScanResult, Severity
 
 logger = logging.getLogger(__name__)
 
+_PROTOCOL_VERSION = "2025-03-26"
+
 
 class MCPScanner:
     """Orchestrates all scanning modes against MCP servers."""
@@ -139,13 +141,74 @@ class MCPScanner:
 
         return self.scan_tool_list(tools)
 
+    @staticmethod
+    def _proxies(proxy: str | None) -> dict[str, str] | None:
+        return {"http": proxy, "https": proxy} if proxy else None
+
+    def _open_http_session(
+        self,
+        url: str,
+        timeout: int,
+        extra_headers: dict[str, str] | None,
+        proxies: dict[str, str] | None,
+    ) -> dict[str, str]:
+        """Initialize an MCP HTTP session and return headers for follow-up requests.
+
+        Handles auth/extra headers, captures the Mcp-Session-Id, and adds the
+        MCP-Protocol-Version required on requests after initialize.
+        """
+        import requests
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }
+        if extra_headers:
+            headers.update(extra_headers)
+
+        resp = requests.post(
+            url,
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": _PROTOCOL_VERSION,
+                    "capabilities": {},
+                    "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
+                },
+            },
+            headers=headers,
+            timeout=timeout,
+            proxies=proxies,
+        )
+        resp.raise_for_status()
+
+        post_headers = dict(headers)
+        post_headers["MCP-Protocol-Version"] = _PROTOCOL_VERSION
+        session_id = resp.headers.get("Mcp-Session-Id") or resp.headers.get("mcp-session-id")
+        if session_id:
+            post_headers["Mcp-Session-Id"] = session_id
+
+        resp = requests.post(
+            url,
+            json={"jsonrpc": "2.0", "method": "notifications/initialized"},
+            headers=post_headers,
+            timeout=timeout,
+            proxies=proxies,
+        )
+        resp.raise_for_status()
+        return post_headers
+
     def scan_server_url(
         self,
         url: str,
         timeout: int | None = None,
         check_rugpull: bool = False,
+        extra_headers: dict[str, str] | None = None,
+        proxy: str | None = None,
     ) -> ScanResult:
-        """Connect to a URL-based (HTTP/SSE) MCP server."""
+        """Connect to a URL-based (Streamable HTTP / SSE) MCP server."""
         import requests
 
         timeout = timeout or self.config.timeout_url
@@ -154,52 +217,16 @@ class MCPScanner:
         except ValidationError as e:
             raise RuntimeError(f"Invalid URL: {e}") from e
 
+        proxies = self._proxies(proxy)
         logger.info("Scanning URL server: %s", url)
         try:
-            # Initialize
-            resp = requests.post(
-                url,
-                json={
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": "initialize",
-                    "params": {
-                        "protocolVersion": "2025-03-26",
-                        "capabilities": {},
-                        "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
-                    },
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json, text/event-stream",
-                },
-                timeout=timeout,
-            )
-            resp.raise_for_status()
-
-            resp = requests.post(
-                url,
-                json={
-                    "jsonrpc": "2.0",
-                    "method": "notifications/initialized",
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json, text/event-stream",
-                },
-                timeout=timeout,
-            )
-            resp.raise_for_status()
-
-            # Request tool list
+            post_headers = self._open_http_session(url, timeout, extra_headers, proxies)
             resp = requests.post(
                 url,
                 json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json, text/event-stream",
-                },
+                headers=post_headers,
                 timeout=timeout,
+                proxies=proxies,
             )
             resp.raise_for_status()
             result = self._response_to_jsonrpc(resp)
@@ -276,36 +303,28 @@ class MCPScanner:
         return json.dumps(result, sort_keys=True)
 
     def probe_url(
-        self, url: str, calls: int = 6, timeout: int | None = None
+        self,
+        url: str,
+        calls: int = 6,
+        timeout: int | None = None,
+        extra_headers: dict[str, str] | None = None,
+        proxy: str | None = None,
     ) -> tuple[list[dict[str, Any]], dict[str, list[CallResult]]]:
         """Call each tool on a URL server `calls` times and collect responses."""
         import requests
 
         timeout = timeout or self.config.timeout_url
         validate_url(url)
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream",
-        }
+        proxies = self._proxies(proxy)
+        headers = self._open_http_session(url, timeout, extra_headers, proxies)
 
         def _post(payload: dict[str, Any]) -> dict[str, Any]:
-            resp = requests.post(url, json=payload, headers=headers, timeout=timeout)
+            resp = requests.post(
+                url, json=payload, headers=headers, timeout=timeout, proxies=proxies
+            )
             resp.raise_for_status()
             return self._response_to_jsonrpc(resp)
 
-        _post(
-            {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": "2025-03-26",
-                    "capabilities": {},
-                    "clientInfo": {"name": "mcp-tool-auditor", "version": __version__},
-                },
-            }
-        )
-        _post({"jsonrpc": "2.0", "method": "notifications/initialized"})
         listed = _post({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         tools = listed.get("result", {}).get("tools", [])
 
